@@ -4,20 +4,6 @@
 #include <cmath>
 #include "test.h"
 
-#define ASSERT_EQ(val1, val2) \
-    if ((val1) != (val2)) std::cerr << "ASSERT_EQ failed: " << #val1 << " != " << #val2 << " (" << (val1) << " != " << (val2) << ")" << std::endl;
-
-#define ASSERT_NEAR(val1, val2, eps) \
-    if (std::abs((val1) - (val2)) > (eps)) std::cerr << "ASSERT_NEAR failed: " << #val1 << " ≉ " << #val2 << " (" << (val1) << " != " << (val2) << ")" << std::endl;
-
-#define ASSERT_TRUE(cond) \
-    if (!(cond)) std::cerr << "ASSERT_TRUE failed: " << #cond << std::endl;
-
-#define RUN_TEST(test_suite, test_name) \
-    std::cout << "Running " << #test_suite << "." << #test_name << "..." << std::endl; \
-    test_suite##_##test_name(); \
-    std::cout << "Passed.\n" << std::endl;
-
 class Flower;
 
 class CareAction {
@@ -152,7 +138,7 @@ public:
         : Flower("Daisy", 14.0, 67.0, "White-Yellow", plan) {}
 };
 
-void TEST_Flower_Initialization() {
+TEST(FlowerTest, Initialization) {
     std::vector<CareAction *> plan;
     plan.push_back(new Watering());
     plan.push_back(new Fertilizing());
@@ -164,9 +150,10 @@ void TEST_Flower_Initialization() {
     ASSERT_EQ(flower.getHeight(), 15.0);
     ASSERT_EQ(flower.getHealth(), 70.0);
     ASSERT_EQ(flower.getColor(), "Red");
+    return true;
 }
 
-void TEST_Flower_CareEffect() {
+TEST(FlowerTest, CareEffect) {
     std::vector<CareAction *> plan;
     plan.push_back(new Watering());
     plan.push_back(new Fertilizing());
@@ -182,11 +169,11 @@ void TEST_Flower_CareEffect() {
     ASSERT_NEAR(flower.getHeight(), 10.0 + 2 + 5 + 1 + 0.5, 0.001);
     ASSERT_NEAR(flower.getHealth(), 100.0, 0.001);
     ASSERT_EQ(flower.getColor(), "Aromatic Refreshed Brighter Yellow");
+    return true;
 }
 
 int main() {
-    RUN_TEST(TEST_Flower, Initialization);
-    RUN_TEST(TEST_Flower, CareEffect);
+    RUN_TEST(FlowerTest, Initialization);
+    RUN_TEST(FlowerTest, CareEffect);
     return 0;
 }
-
