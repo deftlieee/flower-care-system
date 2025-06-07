@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include "test.h"
 
 #define ASSERT_EQ(val1, val2) \
     if ((val1) != (val2)) std::cerr << "ASSERT_EQ failed: " << #val1 << " != " << #val2 << " (" << (val1) << " != " << (val2) << ")" << std::endl;
