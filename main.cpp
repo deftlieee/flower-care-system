@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <memory>
 #include <cmath>
-#include "test.h"
 
 class Flower;
 
@@ -13,11 +13,12 @@ public:
 };
 
 class Flower {
+protected:
     std::string name;
+    std::string color;
     double height;
     double health;
-    std::string color;
-    std::vector<CareAction *> care_plan;
+    std::vector<std::unique_ptr<CareAction>> care_plan;
 
     void clampHealth() {
         if (health > 100) health = 100;
@@ -25,28 +26,61 @@ class Flower {
     }
 
 public:
-    Flower(const std::string &_name, double _height, double _health, const std::string &_color, const std::vector<CareAction *> &_plan)
-        : name(_name), height(_height), health(_health), color(_color), care_plan(_plan) {}
+    Flower(std::string name, std::string color, double height, double health)
+        : name(std::move(name)), color(std::move(color)), height(height), health(health) {}
 
-    virtual ~Flower() {
-        for (auto action : care_plan) {
-            delete action;
-        }
+    virtual ~Flower() = default;
+
+    void addCareAction(CareAction* action) {
+        care_plan.emplace_back(action);
     }
 
     void care() {
-        for (auto action : care_plan) {
+        for (auto &action : care_plan) {
             action->apply_to(*this);
         }
     }
 
-    const std::string &getName() const { return name; }
+    void printInfo() const {
+        std::cout << "Flower: " << name << ", Color: " << color
+                  << ", Height: " << height << " cm, Health: " << health << "%\n";
+    }
+
     double getHeight() const { return height; }
     void setHeight(double h) { height = h; }
+
     double getHealth() const { return health; }
     void setHealth(double h) { health = h; clampHealth(); }
-    const std::string &getColor() const { return color; }
-    void setColor(const std::string &c) { color = c; }
+
+    std::string getColor() const { return color; }
+    void setColor(const std::string& c) { color = c; }
+
+    std::string getName() const { return name; }
+};
+
+class Orchid : public Flower {
+public:
+    Orchid() : Flower("Orchid", "Purple", 12.0, 65.0) {}
+};
+
+class Sunflower : public Flower {
+public:
+    Sunflower() : Flower("Sunflower", "Yellow", 20.0, 75.0) {}
+};
+
+class Lily : public Flower {
+public:
+    Lily() : Flower("Lily", "White", 18.0, 70.0) {}
+};
+
+class Daffodil : public Flower {
+public:
+    Daffodil() : Flower("Daffodil", "Golden", 16.0, 68.0) {}
+};
+
+class Daisy : public Flower {
+public:
+    Daisy() : Flower("Daisy", "White-Yellow", 14.0, 67.0) {}
 };
 
 class Watering : public CareAction {
@@ -76,7 +110,7 @@ public:
 class Sunlight : public CareAction {
     int hours;
 public:
-    Sunlight(int h) : hours(h) {}
+    explicit Sunlight(int h) : hours(h) {}
     void apply_to(Flower &flower) override {
         double health_boost = hours * 1.5;
         flower.setHealth(flower.getHealth() + health_boost);
@@ -108,43 +142,19 @@ public:
     }
 };
 
-class Orchid : public Flower {
-public:
-    Orchid(const std::vector<CareAction *> &plan)
-        : Flower("Orchid", 12.0, 65.0, "Purple", plan) {}
-};
+#define TEST(suiteName, testName) bool suiteName##_##testName()
+#define RUN_TEST(suiteName, testName) \
+    if (suiteName##_##testName()) std::cout << #suiteName "." #testName " passed\n"; \
+    else std::cout << #suiteName "." #testName " failed\n";
 
-class Sunflower : public Flower {
-public:
-    Sunflower(const std::vector<CareAction *> &plan)
-        : Flower("Sunflower", 20.0, 75.0, "Yellow", plan) {}
-};
-
-class Lily : public Flower {
-public:
-    Lily(const std::vector<CareAction *> &plan)
-        : Flower("Lily", 18.0, 70.0, "White", plan) {}
-};
-
-class Daffodil : public Flower {
-public:
-    Daffodil(const std::vector<CareAction *> &plan)
-        : Flower("Daffodil", 16.0, 68.0, "Golden", plan) {}
-};
-
-class Daisy : public Flower {
-public:
-    Daisy(const std::vector<CareAction *> &plan)
-        : Flower("Daisy", 14.0, 67.0, "White-Yellow", plan) {}
-};
+#define ASSERT_EQ(a, b) if ((a) != (b)) return false;
+#define ASSERT_NEAR(a, b, eps) if (std::fabs((a) - (b)) > (eps)) return false;
 
 TEST(FlowerTest, Initialization) {
-    std::vector<CareAction *> plan;
-    plan.push_back(new Watering());
-    plan.push_back(new Fertilizing());
-    plan.push_back(new Pruning());
-
-    Flower flower("Rose", 15.0, 70.0, "Red", plan);
+    auto flower = Flower("Rose", "Red", 15.0, 70.0);
+    flower.addCareAction(new Watering());
+    flower.addCareAction(new Fertilizing());
+    flower.addCareAction(new Pruning());
 
     ASSERT_EQ(flower.getName(), "Rose");
     ASSERT_EQ(flower.getHeight(), 15.0);
@@ -154,16 +164,15 @@ TEST(FlowerTest, Initialization) {
 }
 
 TEST(FlowerTest, CareEffect) {
-    std::vector<CareAction *> plan;
-    plan.push_back(new Watering());
-    plan.push_back(new Fertilizing());
-    plan.push_back(new Pruning());
-    plan.push_back(new Sunlight(4));
-    plan.push_back(new Repotting());
-    plan.push_back(new Aromatizing());
-    plan.push_back(new Misting());
+    auto flower = Flower("Tulip", "Yellow", 10.0, 60.0);
+    flower.addCareAction(new Watering());
+    flower.addCareAction(new Fertilizing());
+    flower.addCareAction(new Pruning());
+    flower.addCareAction(new Sunlight(4));
+    flower.addCareAction(new Repotting());
+    flower.addCareAction(new Aromatizing());
+    flower.addCareAction(new Misting());
 
-    Flower flower("Tulip", 10.0, 60.0, "Yellow", plan);
     flower.care();
 
     ASSERT_NEAR(flower.getHeight(), 10.0 + 2 + 5 + 1 + 0.5, 0.001);
