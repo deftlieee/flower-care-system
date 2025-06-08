@@ -181,61 +181,74 @@ TEST(FlowerTest, CareEffect) {
     return true;
 }
 
-TEST(FlowerTest, CareActionOrder) {
-    auto flower = Flower("TestFlower", "Blue", 5.0, 50.0);
-    flower.addCareAction(new Watering());
-    flower.addCareAction(new Fertilizing());
+TEST(FlowerTest, ColorChangeSequence) {
+    auto flower = Flower("ColorSeq", "White", 10.0, 50.0);
+    flower.addCareAction(new Aromatizing());
     flower.addCareAction(new Pruning());
+    flower.addCareAction(new Repotting());
     flower.care();
 
-    ASSERT_NEAR(flower.getHeight(), 5.0 + 2 + 5, 0.001);
-    ASSERT_NEAR(flower.getHealth(), 50.0 + 10 + 5 + 8, 0.001);
-    ASSERT_EQ(flower.getColor(), "Brighter Blue");
+    ASSERT_EQ(flower.getColor(), "Refreshed Brighter Aromatic White");
     return true;
 }
 
-TEST(FlowerTest, HealthClamping) {
-    auto flower = Flower("ClampTest", "Green", 10.0, 95.0);
+TEST(FlowerTest, HeightIncreaseOnly) {
+    auto flower = Flower("HeightOnly", "Green", 8.0, 40.0);
     flower.addCareAction(new Watering());
     flower.addCareAction(new Fertilizing());
+    flower.addCareAction(new Misting());
+    flower.care();
+
+    ASSERT_NEAR(flower.getHeight(), 8.0 + 2 + 5 + 0.5, 0.001);
+    ASSERT_NEAR(flower.getHealth(), 40.0 + 10 + 5 + 6, 0.001);
+    ASSERT_EQ(flower.getColor(), "Green");
+    return true;
+}
+
+TEST(FlowerTest, HealthClampUpper) {
+    auto flower = Flower("ClampUp", "Blue", 5.0, 95.0);
+    flower.addCareAction(new Watering());
+    flower.addCareAction(new Fertilizing());
+    flower.addCareAction(new Repotting());
     flower.care();
 
     ASSERT_NEAR(flower.getHealth(), 100.0, 0.001);
+    return true;
+}
 
-    flower.setHealth(-10.0);
+TEST(FlowerTest, HealthClampLower) {
+    auto flower = Flower("ClampDown", "Orange", 7.0, 5.0);
+    class Damage : public CareAction {
+    public:
+        void apply_to(Flower &flower) override {
+            flower.setHealth(flower.getHealth() - 10);
+        }
+    };
+    flower.addCareAction(new Damage());
+    flower.care();
+
     ASSERT_NEAR(flower.getHealth(), 0.0, 0.001);
-
     return true;
 }
 
 TEST(FlowerTest, NoCareActions) {
-    auto flower = Flower("NoCare", "Pink", 8.0, 55.0);
+    auto flower = Flower("NoCare", "Pink", 12.0, 50.0);
     flower.care();
 
-    ASSERT_EQ(flower.getHeight(), 8.0);
-    ASSERT_EQ(flower.getHealth(), 55.0);
+    ASSERT_EQ(flower.getName(), "NoCare");
     ASSERT_EQ(flower.getColor(), "Pink");
-    return true;
-}
-
-TEST(FlowerTest, MultipleSunlightEffects) {
-    auto flower = Flower("Sunny", "Orange", 12.0, 40.0);
-    flower.addCareAction(new Sunlight(3));
-    flower.addCareAction(new Sunlight(2));
-    flower.care();
-
-    ASSERT_EQ(flower.getHeight(), 12.0);
-    ASSERT_NEAR(flower.getHealth(), 40.0 + 3*1.5 + 2*1.5, 0.001);
-    ASSERT_EQ(flower.getColor(), "Orange");
+    ASSERT_NEAR(flower.getHeight(), 12.0, 0.001);
+    ASSERT_NEAR(flower.getHealth(), 50.0, 0.001);
     return true;
 }
 
 int main() {
     RUN_TEST(FlowerTest, Initialization);
     RUN_TEST(FlowerTest, CareEffect);
-    RUN_TEST(FlowerTest, CareActionOrder);
-    RUN_TEST(FlowerTest, HealthClamping);
+    RUN_TEST(FlowerTest, ColorChangeSequence);
+    RUN_TEST(FlowerTest, HeightIncreaseOnly);
+    RUN_TEST(FlowerTest, HealthClampUpper);
+    RUN_TEST(FlowerTest, HealthClampLower);
     RUN_TEST(FlowerTest, NoCareActions);
-    RUN_TEST(FlowerTest, MultipleSunlightEffects);
     return 0;
 }
