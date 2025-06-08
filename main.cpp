@@ -58,7 +58,6 @@ public:
     std::string getName() const { return name; }
 };
 
-// Specific flowers
 class Orchid : public Flower {
 public:
     Orchid() : Flower("Orchid", "Purple", 12.0, 65.0) {}
@@ -84,7 +83,6 @@ public:
     Daisy() : Flower("Daisy", "White-Yellow", 14.0, 67.0) {}
 };
 
-// Care actions
 class Watering : public CareAction {
 public:
     void apply_to(Flower &flower) override {
@@ -144,7 +142,6 @@ public:
     }
 };
 
-// Tests
 #define TEST(suiteName, testName) bool suiteName##_##testName()
 #define RUN_TEST(suiteName, testName) \
     if (suiteName##_##testName()) std::cout << #suiteName "." #testName " passed\n"; \
@@ -211,10 +208,34 @@ TEST(FlowerTest, HealthClamping) {
     return true;
 }
 
+TEST(FlowerTest, NoCareActions) {
+    auto flower = Flower("NoCare", "Pink", 8.0, 55.0);
+    flower.care();
+
+    ASSERT_EQ(flower.getHeight(), 8.0);
+    ASSERT_EQ(flower.getHealth(), 55.0);
+    ASSERT_EQ(flower.getColor(), "Pink");
+    return true;
+}
+
+TEST(FlowerTest, MultipleSunlightEffects) {
+    auto flower = Flower("Sunny", "Orange", 12.0, 40.0);
+    flower.addCareAction(new Sunlight(3));
+    flower.addCareAction(new Sunlight(2));
+    flower.care();
+
+    ASSERT_EQ(flower.getHeight(), 12.0);
+    ASSERT_NEAR(flower.getHealth(), 40.0 + 3*1.5 + 2*1.5, 0.001);
+    ASSERT_EQ(flower.getColor(), "Orange");
+    return true;
+}
+
 int main() {
     RUN_TEST(FlowerTest, Initialization);
     RUN_TEST(FlowerTest, CareEffect);
     RUN_TEST(FlowerTest, CareActionOrder);
     RUN_TEST(FlowerTest, HealthClamping);
+    RUN_TEST(FlowerTest, NoCareActions);
+    RUN_TEST(FlowerTest, MultipleSunlightEffects);
     return 0;
 }
